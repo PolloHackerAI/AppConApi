@@ -17,7 +17,7 @@ import {
 import { StatusBar } from "expo-status-bar"
 import { Ionicons } from "@expo/vector-icons"
 
-// Sostituisci con il tuo endpoint MockAPI
+// Il tuo endpoint MockAPI (aggiorna con il tuo URL corretto)
 const API_URL = "https://6826fabc397e48c913180c8d.mockapi.io/user"
 
 // Dati di esempio da usare quando l'API non è disponibile
@@ -28,8 +28,8 @@ const SAMPLE_BOOKS = [
     author: "Umberto Eco",
     description: "Un'indagine in un'abbazia benedettina del XIV secolo.",
     publishedDate: "1980-01-01T00:00:00.000Z",
-    coverImage: "https://picsum.photos/seed/book1/200/300",
-    price: 12.99,
+    coveImage: "https://picsum.photos/seed/book1/200/300",
+    price: "12.99",
   },
   {
     id: "2",
@@ -37,8 +37,8 @@ const SAMPLE_BOOKS = [
     author: "George Orwell",
     description: "Un romanzo distopico ambientato in un futuro totalitario.",
     publishedDate: "1949-06-08T00:00:00.000Z",
-    coverImage: "https://picsum.photos/seed/book2/200/300",
-    price: 9.99,
+    coveImage: "https://picsum.photos/seed/book2/200/300",
+    price: "9.99",
   },
   {
     id: "3",
@@ -46,8 +46,8 @@ const SAMPLE_BOOKS = [
     author: "Antoine de Saint-Exupéry",
     description: "Un racconto poetico che affronta temi come l'amicizia e il senso della vita.",
     publishedDate: "1943-04-06T00:00:00.000Z",
-    coverImage: "https://picsum.photos/seed/book3/200/300",
-    price: 8.5,
+    coveImage: "https://picsum.photos/seed/book3/200/300",
+    price: "8.50",
   },
 ]
 
@@ -67,7 +67,7 @@ export default function App() {
     title: "",
     author: "",
     description: "",
-    coverImage: "https://picsum.photos/200/300",
+    coveImage: "https://picsum.photos/200/300",
     price: "",
   })
 
@@ -101,16 +101,15 @@ export default function App() {
       }
 
       setBooks(data)
+      console.log(`Caricati ${data.length} libri dall'API`)
     } catch (error) {
       console.error("Error fetching books:", error)
       setBooks(SAMPLE_BOOKS)
       setApiError(true)
 
-      Alert.alert(
-        "Errore di connessione",
-        "Impossibile connettersi all'API. Verranno mostrati dati di esempio. Dettaglio: " + error.message,
-        [{ text: "OK" }],
-      )
+      Alert.alert("Errore di connessione", "Impossibile connettersi all'API. Verranno mostrati dati di esempio.", [
+        { text: "OK" },
+      ])
     } finally {
       setLoading(false)
     }
@@ -142,6 +141,7 @@ export default function App() {
       }
 
       setBooks(books.filter((book) => book.id !== id))
+      Alert.alert("Successo", "Libro eliminato con successo")
     } catch (error) {
       console.error("Errore nella cancellazione del libro:", error)
       Alert.alert("Errore", "Impossibile cancellare il libro: " + error.message)
@@ -166,7 +166,7 @@ export default function App() {
         ...newBook,
         id: newId,
         publishedDate: new Date().toISOString(),
-        price: Number.parseFloat(newBook.price),
+        price: newBook.price,
       }
       setBooks([...books, addedBook])
       setAddModalVisible(false)
@@ -174,7 +174,7 @@ export default function App() {
         title: "",
         author: "",
         description: "",
-        coverImage: "https://picsum.photos/200/300",
+        coveImage: "https://picsum.photos/200/300",
         price: "",
       })
       return
@@ -189,7 +189,6 @@ export default function App() {
         body: JSON.stringify({
           ...newBook,
           publishedDate: new Date().toISOString(),
-          price: Number.parseFloat(newBook.price),
         }),
       })
 
@@ -212,9 +211,10 @@ export default function App() {
         title: "",
         author: "",
         description: "",
-        coverImage: "https://picsum.photos/200/300",
+        coveImage: "https://picsum.photos/200/300",
         price: "",
       })
+      Alert.alert("Successo", "Libro aggiunto con successo")
     } catch (error) {
       console.error("Errore nell'aggiunta del libro:", error)
       Alert.alert("Errore", "Impossibile aggiungere il libro: " + error.message)
@@ -239,7 +239,6 @@ export default function App() {
           book.id === currentBook.id
             ? {
                 ...currentBook,
-                price: Number.parseFloat(currentBook.price),
               }
             : book,
         ),
@@ -255,10 +254,7 @@ export default function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...currentBook,
-          price: Number.parseFloat(currentBook.price),
-        }),
+        body: JSON.stringify(currentBook),
       })
 
       if (!response.ok) {
@@ -277,6 +273,7 @@ export default function App() {
       setBooks(books.map((book) => (book.id === updatedBook.id ? updatedBook : book)))
       setEditModalVisible(false)
       setCurrentBook(null)
+      Alert.alert("Successo", "Libro modificato con successo")
     } catch (error) {
       console.error("Errore nella modifica del libro:", error)
       Alert.alert("Errore", "Impossibile modificare il libro: " + error.message)
@@ -297,18 +294,27 @@ export default function App() {
   })
 
   const formatPrice = (price) => {
-    if (price === undefined || price === null) return "N/D"
-    return `€${Number.parseFloat(price).toFixed(2)}`
+    if (price === undefined || price === null || price === "") return "N/D"
+    const numPrice = Number.parseFloat(price)
+    if (isNaN(numPrice)) return "N/D"
+    return `€${numPrice.toFixed(2)}`
+  }
+
+  const getImageUrl = (book) => {
+    // Gestisce sia 'coveImage' che 'coverImage' per compatibilità
+    return book.coveImage || book.coverImage || PLACEHOLDER_IMAGE
   }
 
   const renderItem = ({ item }) => (
     <View style={styles.bookItem}>
       <Image
-        source={{ uri: item.coverImage || PLACEHOLDER_IMAGE }}
+        source={{ uri: getImageUrl(item) }}
         style={styles.coverImage}
         onError={() => {
-          console.log("Errore caricamento immagine per:", item.title)
+          // Rimuovi il log per ridurre il rumore nella console
+          // console.log("Errore caricamento immagine per:", item.title)
         }}
+        defaultSource={{ uri: PLACEHOLDER_IMAGE }}
       />
       <View style={styles.bookInfo}>
         <Text style={styles.title}>{item.title}</Text>
@@ -436,8 +442,8 @@ export default function App() {
             <TextInput
               style={styles.input}
               placeholder="URL Immagine di copertina"
-              value={newBook.coverImage}
-              onChangeText={(text) => setNewBook({ ...newBook, coverImage: text })}
+              value={newBook.coveImage}
+              onChangeText={(text) => setNewBook({ ...newBook, coveImage: text })}
             />
 
             <TextInput
@@ -503,8 +509,8 @@ export default function App() {
                 <TextInput
                   style={styles.input}
                   placeholder="URL Immagine di copertina"
-                  value={currentBook.coverImage}
-                  onChangeText={(text) => setCurrentBook({ ...currentBook, coverImage: text })}
+                  value={currentBook.coveImage || currentBook.coverImage || ""}
+                  onChangeText={(text) => setCurrentBook({ ...currentBook, coveImage: text })}
                 />
 
                 <TextInput
